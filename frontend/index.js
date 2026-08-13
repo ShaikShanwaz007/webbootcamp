@@ -7,7 +7,7 @@ var users=[
     {
         "name":"Jane Doe",
         "gender":"female",
-        "image":"jane.png"
+        "image":"jane .png"
     }
 ]
 var curId = 0;
