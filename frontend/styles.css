@@ -18,7 +18,12 @@ h1{
     margin-bottom: 20px;
     border-radius: 20px;
 }
-.card hover{
+.card button{
+    width: 70%;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+.card button:hover{
     background-color: burlywood;
     cursor: pointer;
 }
