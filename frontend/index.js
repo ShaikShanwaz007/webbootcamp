@@ -46,3 +46,25 @@ function randomUser(){
         console.log("Error occured: " + err);
     })
 }
+function myrandomUser(){
+    fetch("/api/random-user")
+    .then(function(res){
+        return res.json();
+    })
+    .then(function(data){
+        var userName = document.getElementById("user-name");
+        var userGender = document.getElementById("user-gender");
+        var userImage = document.getElementById("user-image");
+
+        var newUserName = data.name;
+        var newUserGender = data.gender;
+        var newUserImage = data.image;
+
+        userName.innerHTML = newUserName;
+        userGender.innerHTML = newUserGender;
+        userImage.src = newUserImage;
+    })
+    .catch(function(err){
+        console.log("Error occured: " + err);
+    })
+}
