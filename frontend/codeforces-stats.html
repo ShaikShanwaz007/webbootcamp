@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Codeforces Insights — Profile Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0d14;
+    --bg-2:#0d111b;
+    --panel:#11151f;
+    --panel-2:#161b29;
+    --line:#232a3d;
+    --line-soft:#1b2132;
+    --ink:#e9ecf4;
+    --ink-dim:#8b92a8;
+    --ink-faint:#5b6178;
+    --gold:#d4a954;
+    --teal:#4fbdba;
+    --coral:#e2725b;
+    --teal-ink:#5fd0cd;
+    --gold-ink:#d4a954;
+    --coral-ink:#e2725b;
+    --green-ink:#4fd17a;
+    --error-border:rgba(226,114,91,0.4);
+    --error-bg:rgba(226,114,91,0.08);
+    --error-ink:#f3a896;
+    --hero-grid-line:rgba(255,255,255,0.025);
+    --radius:12px;
+    --radius-sm:8px;
+    --rt-newbie:#9a9a9a;
+    --rt-pupil:#3aaa35;
+    --rt-spec:#15c4b6;
+    --rt-expert:#4d7dff;
+    --rt-cm:#b84df0;
+    --rt-master:#ff9a2e;
+    --rt-gm:#ff4d4d;
+    --rt-legend:#ff4d4d;
+  }
+
+  html[data-theme="light"]{
+    --bg:#f6f7fb;
+    --bg-2:#ffffff;
+    --panel:#ffffff;
+    --panel-2:#f1f3f8;
+    --line:#e1e4ec;
+    --line-soft:#ebedf4;
+    --ink:#1b2230;
+    --ink-dim:#5b6178;
+    --ink-faint:#8d92a4;
+    --teal-ink:#0c8783;
+    --gold-ink:#8a6118;
+    --coral-ink:#c0503a;
+    --green-ink:#1f9c4d;
+    --error-border:rgba(194,80,58,0.35);
+    --error-bg:rgba(194,80,58,0.07);
+    --error-ink:#a8402c;
+    --hero-grid-line:rgba(20,26,45,0.05);
+  }
+
+  *{box-sizing:border-box; transition:background-color .2s ease, border-color .2s ease, color .2s ease;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(79,189,186,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(212,169,84,0.07), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'DM Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    transition:background-color .25s ease, color .25s ease;
+  }
+  ::selection{background:rgba(79,189,186,0.35);}
+  a{color:var(--teal);}
+
+  .mono{font-family:'DM Mono', monospace;}
+  .disp{font-family:'Space Grotesk', sans-serif;}
+
+  /* ---------- layout shells ---------- */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:64px 0 38px;
+    border-bottom:1px solid var(--line-soft);
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(var(--hero-grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hero-grid-line) 1px, transparent 1px);
+    background-size:42px 42px;
+    mask-image:linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 85%);
+    pointer-events:none;
+  }
+  .hero-inner{position:relative; max-width:760px;}
+  .eyebrow{
+    font-family:'DM Mono', monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    color:var(--teal-ink);
+    text-transform:uppercase;
+    margin:0 0 14px;
+    display:flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px; height:7px; border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 0 3px rgba(79,189,186,0.18);
+  }
+  .hero-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(32px,4.6vw,50px);
+    line-height:1.1;
+    margin:0 0 16px;
+    letter-spacing:-0.01em;
+  }
+  .hero-title span{color:var(--gold-ink);}
+  .hero-title .accent2{color:var(--teal-ink);}
+  .hero-sub{
+    color:var(--ink-dim);
+    font-size:15.5px;
+    line-height:1.65;
+    margin:0 0 30px;
+    max-width:560px;
+  }
+
+  .search-bar{
+    display:flex; align-items:stretch;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(255,255,255,0.02) inset, 0 18px 40px -22px rgba(0,0,0,0.7);
+    transition:border-color .18s ease;
+  }
+  .search-bar:focus-within{border-color:var(--teal);}
+  .prompt{
+    font-family:'DM Mono', monospace;
+    font-size:13.5px;
+    color:var(--teal-ink);
+    padding:0 6px 0 18px;
+    display:flex; align-items:center;
+    white-space:nowrap;
+    user-select:none;
+  }
+  #handleInput{
+    flex:1; min-width:0;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--ink);
+    font-family:'DM Mono', monospace;
+    font-size:15px;
+    padding:16px 8px;
+  }
+  #handleInput::placeholder{color:var(--ink-faint);}
+  #analyzeBtn{
+    border:none;
+    background:var(--teal);
+    color:#06201f;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    padding:0 26px;
+    cursor:pointer;
+    display:flex;align-items:center;gap:8px;
+    transition:background .15s ease, transform .1s ease;
+  }
+  #analyzeBtn:hover{background:#62cfcc;}
+  #analyzeBtn:active{transform:scale(0.98);}
+  #analyzeBtn:disabled{background:var(--ink-faint); cursor:not-allowed;}
+
+  .examples{
+    margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    font-size:12.5px; color:var(--ink-faint);
+  }
+  .chip{
+    font-family:'DM Mono', monospace;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    padding:5px 11px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .chip:hover{border-color:var(--teal-ink); color:var(--teal-ink);}
+
+  .error-box{
+    margin-top:18px;
+    border:1px solid var(--error-border);
+    background:var(--error-bg);
+    color:var(--error-ink);
+    padding:13px 16px;
+    border-radius:var(--radius-sm);
+    font-size:13.5px;
+    line-height:1.5;
+  }
+  .hidden{display:none !important;}
+
+  /* ---------- loading ---------- */
+  .loading{
+    display:flex; align-items:center; gap:12px;
+    margin-top:18px;
+    font-family:'DM Mono', monospace;
+    font-size:13.5px;
+    color:var(--ink-dim);
+  }
+  .spinner{
+    width:15px; height:15px;
+    border-radius:50%;
+    border:2px solid var(--line);
+    border-top-color:var(--teal);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loadingText::after{
+    content:"";
+    animation:dots 1.2s steps(4,end) infinite;
+  }
+  @keyframes dots{
+    0%{content:"";} 25%{content:".";} 50%{content:"..";} 75%{content:"...";} 100%{content:"";}
+  }
+
+  /* ---------- results ---------- */
+  .results{padding:42px 0 90px;}
+
+  .profile-card{
+    display:flex; gap:28px; flex-wrap:wrap;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:28px;
+    margin-bottom:28px;
+    position:relative;
+    overflow:hidden;
+  }
+  .profile-card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--tier-color, var(--teal)), transparent 75%);
+  }
+  .profile-left{display:flex; gap:18px; align-items:flex-start; min-width:230px;}
+  .avatar{
+    width:78px; height:78px; border-radius:14px;
+    object-fit:cover;
+    border:2px solid var(--line);
+    background:var(--panel-2);
+    flex-shrink:0;
+  }
+  .profile-id .handle{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:23px;
+    margin:0 0 4px;
+    color:var(--tier-color, var(--ink));
+  }
+  .rank-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'DM Mono', monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--tier-color, var(--ink-dim));
+    margin-bottom:8px;
+  }
+  .rank-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--tier-color, var(--ink-dim));}
+  .meta-line{
+    font-size:13px; color:var(--ink-dim); line-height:1.7;
+  }
+  .meta-line b{color:var(--ink-faint); font-weight:500;}
+
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(108px,1fr));
+    gap:14px;
+    flex:1;
+    align-content:center;
+  }
+  .stat-cell{
+    border-left:1px solid var(--line);
+    padding-left:16px;
+  }
+  .stat-cell:first-child{border-left:none; padding-left:0;}
+  .stat-num{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    line-height:1.1;
+  }
+  .stat-num.gold{color:var(--gold-ink);}
+  .stat-num.teal{color:var(--teal-ink);}
+  .stat-num.coral{color:var(--coral-ink);}
+  .stat-label{
+    font-size:11px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-top:4px;
+  }
+
+  /* chart grid */
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin:38px 0 16px;
+  }
+  .section-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:18px;
+    margin:0;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-title .idx{
+    font-family:'DM Mono', monospace;
+    font-size:12px;
+    color:var(--ink-faint);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:2px 7px;
+  }
+  .section-note{font-size:12.5px; color:var(--ink-faint);}
+
+  .chart-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:18px;
+  }
+  .chart-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 20px 16px;
+  }
+  .chart-card.wide{grid-column:1 / -1;}
+  .chart-card h3{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:14.5px;
+    font-weight:600;
+    margin:0 0 2px;
+  }
+  .chart-card .sub{font-size:12px; color:var(--ink-faint); margin:0 0 14px;}
+  .canvas-wrap{position:relative; height:280px;}
+  .canvas-wrap.short{height:230px;}
+
+  .empty-note{
+    color:var(--ink-faint); font-size:13px; padding:30px 0; text-align:center;
+  }
+
+  /* heatmap */
+  .heatmap-scroll{overflow-x:auto; padding-bottom:6px;}
+  .heatmap-inner{display:inline-block; min-width:760px;}
+  .heatmap-months{
+    display:grid;
+    grid-auto-flow:column;
+    margin-bottom:5px;
+    height:14px;
+    position:relative;
+  }
+  .heatmap-months span{
+    font-family:'DM Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-faint);
+    position:absolute;
+    white-space:nowrap;
+  }
+  .heatmap-grid{
+    display:grid;
+    grid-auto-flow:column;
+    grid-template-rows:repeat(7, 12px);
+    gap:3px;
+  }
+  .hm-cell{
+    width:12px; height:12px;
+    border-radius:3px;
+    background:var(--line-soft);
+  }
+  .heatmap-legend{
+    display:flex; align-items:center; gap:6px;
+    margin-top:12px; font-size:11px; color:var(--ink-faint);
+  }
+  .heatmap-legend .hm-cell{width:10px;height:10px;}
+
+  /* tags / verdict / lang legend lists */
+  .legend-list{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .legend-row{
+    display:flex; align-items:center; gap:9px;
+    font-size:12.5px; color:var(--ink-dim);
+  }
+  .legend-swatch{width:9px; height:9px; border-radius:3px; flex-shrink:0;}
+  .legend-row b{color:var(--ink); font-weight:600; margin-left:auto; font-family:'DM Mono',monospace;}
+
+  /* contest table */
+  .table-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  table{width:100%; border-collapse:collapse;}
+  thead th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-faint);
+    font-weight:500;
+    padding:13px 18px;
+    border-bottom:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  tbody td{
+    padding:12px 18px;
+    font-size:13px;
+    border-bottom:1px solid var(--line-soft);
+    color:var(--ink-dim);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--panel-2);}
+  td.contest-name{color:var(--ink); font-weight:500;}
+  td.mono-num{font-family:'DM Mono', monospace;}
+  .delta-pos{color:var(--green-ink);}
+  .delta-neg{color:var(--coral-ink);}
+
+  footer{
+    border-top:1px solid var(--line-soft);
+    padding:26px 0 50px;
+    text-align:center;
+    color:var(--ink-faint);
+    font-size:12.5px;
+  }
+  footer a{color:var(--ink-faint); text-decoration:underline;}
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle{
+    position:fixed; top:20px; right:24px; z-index:60;
+    width:40px; height:40px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--ink-dim);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow:0 10px 24px -12px rgba(0,0,0,0.45);
+  }
+  .theme-toggle:hover{border-color:var(--teal-ink); color:var(--teal-ink);}
+  .theme-toggle svg{width:17px; height:17px; display:none;}
+  html[data-theme="dark"] .theme-toggle .icon-sun{display:block;}
+  html[data-theme="light"] .theme-toggle .icon-moon{display:block;}
+
+  @media (max-width:540px){
+    .theme-toggle{top:14px; right:14px; width:36px; height:36px;}
+  }
+
+  @media (max-width:760px){
+    .chart-grid{grid-template-columns:1fr;}
+    .chart-card.wide{grid-column:auto;}
+    .profile-card{flex-direction:column;}
+    .stat-cell{border-left:none; padding-left:0;}
+  }
+
+  /* focus visibility */
+  button:focus-visible, input:focus-visible, .chip:focus-visible{
+    outline:2px solid var(--teal); outline-offset:2px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to light theme" title="Switch theme">
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8L6 18M18 6l1.8-1.8"></path></svg>
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"></path></svg>
+</button>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <p class="eyebrow">Codeforces Profile Analytics</p>
+    <h1 class="hero-title">Know your <span>rating</span>.<br>Know your <span class="accent2">next move</span>.</h1>
+    <p class="hero-sub">Enter any Codeforces handle to pull live data straight from the judge — rating history, solved problems by difficulty and tag, verdict breakdown, and a full year of submission activity, rendered as one clean report.</p>
+
+    <form id="searchForm" class="search-bar">
+      <span class="prompt">handle@codeforces:~$</span>
+      <input id="handleInput" type="text" placeholder="tourist" autocomplete="off" spellcheck="false" />
+      <button type="submit" id="analyzeBtn">Analyze →</button>
+    </form>
+    <div class="examples">
+      <span>Try:</span>
+      <span class="chip" data-handle="tourist">tourist</span>
+      <span class="chip" data-handle="Errichto">Errichto</span>
+      <span class="chip" data-handle="SecondThread">SecondThread</span>
+      <span class="chip" data-handle="Petr">Petr</span>
+    </div>
+
+    <div id="loadingOverlay" class="loading hidden">
+      <span class="spinner"></span>
+      <span id="loadingText" class="mono">Compiling submissions</span>
+    </div>
+    <div id="errorBox" class="error-box hidden"></div>
+  </div>
+</header>
+
+<main id="results" class="results hidden">
+  <div class="wrap">
+
+    <section class="profile-card" id="profileCard">
+      <!-- filled by JS -->
+    </section>
+
+    <div class="section-head">
+      <h2 class="section-title"><span class="idx">01</span> Rating Trajectory</h2>
+      <span class="section-note" id="ratingNote"></span>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <h3>Rating over time</h3>
+        <p class="sub">Each point is a rated contest. Background bands mirror Codeforces' own rank tiers.</p>
+        <div class="canvas-wrap" id="ratingWrap"><canvas id="ratingChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2 class="section-title"><span class="idx">02</span> Problem Solving</h2>
+      <span class="section-note" id="solvedNote"></span>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Solved by difficulty</h3>
+        <p class="sub">Unique problems, bucketed by Codeforces rating.</p>
+        <div class="canvas-wrap short"><canvas id="difficultyChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top tags</h3>
+        <p class="sub">Most frequent problem categories among solves.</p>
+        <div class="canvas-wrap short"><canvas id="tagsChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2 class="section-title"><span class="idx">03</span> Submission Behaviour</h2>
+      <span class="section-note" id="subNote"></span>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Verdict breakdown</h3>
+        <p class="sub">All submissions, by judge verdict.</p>
+        <div class="canvas-wrap short"><canvas id="verdictChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Languages used</h3>
+        <p class="sub">Submission count by language.</p>
+        <div class="canvas-wrap short"><canvas id="langChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2 class="section-title"><span class="idx">04</span> Activity</h2>
+      <span class="section-note" id="activityNote"></span>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <h3>Submission activity — last 12 months</h3>
+        <p class="sub">Darker teal means more submissions that day.</p>
+        <div class="heatmap-scroll">
+          <div class="heatmap-inner">
+            <div class="heatmap-months" id="hmMonths"></div>
+            <div class="heatmap-grid" id="hmGrid"></div>
+          </div>
+        </div>
+        <div class="heatmap-legend">
+          <span>Less</span>
+          <span class="hm-cell" style="background:var(--line-soft)"></span>
+          <span class="hm-cell" style="background:rgba(79,189,186,0.25)"></span>
+          <span class="hm-cell" style="background:rgba(79,189,186,0.5)"></span>
+          <span class="hm-cell" style="background:rgba(79,189,186,0.75)"></span>
+          <span class="hm-cell" style="background:rgba(79,189,186,1)"></span>
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2 class="section-title"><span class="idx">05</span> Recent Contests</h2>
+      <span class="section-note" id="contestNote"></span>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Contest</th>
+            <th>Date</th>
+            <th>Rank</th>
+            <th>Rating</th>
+            <th>Δ Change</th>
+          </tr>
+        </thead>
+        <tbody id="contestTableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  Built on the public <a href="https://codeforces.com/apiHelp" target="_blank" rel="noopener">Codeforces API</a>. Data is fetched live and not stored anywhere. Not affiliated with Codeforces.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  if(typeof Chart === 'undefined'){
+    document.addEventListener('DOMContentLoaded', function(){
+      var box = document.getElementById('errorBox');
+      box.textContent = 'Chart.js failed to load from the CDN, so charts can\'t render. Check your connection and refresh the page.';
+      box.classList.remove('hidden');
+    });
+    return;
+  }
+
+  // ---------- constants ----------
+  var TIERS = [
+    {max:1200, color:'#9a9a9a', name:'Newbie'},
+    {max:1400, color:'#3aaa35', name:'Pupil'},
+    {max:1600, color:'#15c4b6', name:'Specialist'},
+    {max:1900, color:'#4d7dff', name:'Expert'},
+    {max:2100, color:'#b84df0', name:'Candidate Master'},
+    {max:2400, color:'#ff9a2e', name:'Master'},
+    {max:3000, color:'#ff4d4d', name:'Grandmaster'},
+    {max:Infinity, color:'#ff4d4d', name:'Legendary GM'}
+  ];
+
+  function tierColor(rating){
+    if(rating === null || rating === undefined || isNaN(rating)) return '#9a9a9a';
+    for(var i=0;i<TIERS.length;i++){ if(rating < TIERS[i].max) return TIERS[i].color; }
+    return '#ff4d4d';
+  }
+
+  var VERDICT_META = {
+    OK: {label:'Accepted', color:'#4fbdba'},
+    WRONG_ANSWER: {label:'Wrong Answer', color:'#e2725b'},
+    TIME_LIMIT_EXCEEDED: {label:'Time Limit', color:'#d4a954'},
+    RUNTIME_ERROR: {label:'Runtime Error', color:'#9d7fe8'},
+    MEMORY_LIMIT_EXCEEDED: {label:'Memory Limit', color:'#e89f4f'},
+    COMPILATION_ERROR: {label:'Compile Error', color:'#5b6178'},
+    CHALLENGED: {label:'Hacked', color:'#c2403a'},
+    PRESENTATION_ERROR: {label:'Presentation', color:'#7fa8e8'},
+    IDLENESS_LIMIT_EXCEEDED: {label:'Idleness Limit', color:'#8b92a8'},
+    SECURITY_VIOLATED: {label:'Security', color:'#5b6178'},
+    SKIPPED: {label:'Skipped', color:'#3a4256'},
+    PARTIAL: {label:'Partial', color:'#7fa8e8'},
+    TESTING: {label:'In Queue', color:'#3a4256'},
+    REJECTED: {label:'Rejected', color:'#5b6178'}
+  };
+
+  var charts = {}; // keep refs so we can destroy on re-search
+  var lastData = null; // cache of the last successful fetch, used to re-paint charts on theme switch
+
+  function cv(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // ---------- DOM ----------
+  var form = document.getElementById('searchForm');
+  var input = document.getElementById('handleInput');
+  var btn = document.getElementById('analyzeBtn');
+  var errorBox = document.getElementById('errorBox');
+  var loadingOverlay = document.getElementById('loadingOverlay');
+  var loadingText = document.getElementById('loadingText');
+  var results = document.getElementById('results');
+  var themeToggle = document.getElementById('themeToggle');
+
+  themeToggle.addEventListener('click', function(){
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    themeToggle.setAttribute('aria-label', next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+    if(lastData){
+      // charts are drawn on canvas, so colors baked from CSS variables need a fresh render
+      render(lastData.info, lastData.ratingHistory, lastData.submissions, {scroll:false});
+    }
+  });
+
+  document.querySelectorAll('.chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      input.value = chip.getAttribute('data-handle');
+      form.dispatchEvent(new Event('submit'));
+    });
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var handle = input.value.trim();
+    if(!handle) return;
+    runAnalysis(handle);
+  });
+
+  var loadingMessages = ['Compiling submissions','Running on test 1','Fetching rating history','Judging','Almost there'];
+  var loadingTimer = null;
+  function startLoading(){
+    errorBox.classList.add('hidden');
+    results.classList.add('hidden');
+    loadingOverlay.classList.remove('hidden');
+    btn.disabled = true;
+    var i = 0;
+    loadingText.textContent = loadingMessages[0];
+    loadingTimer = setInterval(function(){
+      i = (i+1) % loadingMessages.length;
+      loadingText.textContent = loadingMessages[i];
+    }, 900);
+  }
+  function stopLoading(){
+    clearInterval(loadingTimer);
+    loadingOverlay.classList.add('hidden');
+    btn.disabled = false;
+  }
+  function showError(msg){
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+    results.classList.add('hidden');
+  }
+
+  // ---------- API ----------
+  var API_BASE = 'https://codeforces.com/api/';
+
+  function apiGet(path){
+    return fetch(API_BASE + path).then(function(res){
+      return res.json();
+    }).then(function(json){
+      if(json.status !== 'OK'){
+        throw new Error(json.comment || 'Codeforces API returned an error.');
+      }
+      return json.result;
+    });
+  }
+
+  function runAnalysis(handle){
+    startLoading();
+    Promise.all([
+      apiGet('user.info?handles=' + encodeURIComponent(handle)),
+      apiGet('user.rating?handle=' + encodeURIComponent(handle)).catch(function(){ return []; }),
+      apiGet('user.status?handle=' + encodeURIComponent(handle) + '&from=1&count=100000').catch(function(){ return []; })
+    ]).then(function(arr){
+      stopLoading();
+      var info = arr[0][0];
+      var ratingHistory = arr[1] || [];
+      var submissions = arr[2] || [];
+      render(info, ratingHistory, submissions);
+    }).catch(function(err){
+      stopLoading();
+      var msg = err && err.message ? err.message : 'Something went wrong fetching data from Codeforces.';
+      if(/not found/i.test(msg)){
+        showError('No Codeforces account found for "' + handle + '". Double-check the handle and try again.');
+      } else if(err instanceof TypeError){
+        showError('Could not reach the Codeforces API. This usually means a network or CORS restriction in the current browser — try again, or open this page outside a sandboxed preview.');
+      } else {
+        showError(msg);
+      }
+    });
+  }
+
+  // ---------- helpers ----------
+  function fmtDate(ts){
+    var d = new Date(ts*1000);
+    return d.toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'});
+  }
+  function fmtDateShort(ts){
+    var d = new Date(ts*1000);
+    return d.toLocaleDateString('en-US', {month:'short', year:'2-digit'});
+  }
+  function daysAgo(ts){
+    var diff = Math.floor((Date.now()/1000 - ts) / 86400);
+    return diff;
+  }
+  function destroyCharts(){
+    Object.keys(charts).forEach(function(k){ if(charts[k]) charts[k].destroy(); });
+    charts = {};
+  }
+
+  // ---------- main render ----------
+  function render(info, ratingHistory, submissions, opts){
+    opts = opts || {scroll:true};
+    lastData = {info: info, ratingHistory: ratingHistory, submissions: submissions};
+    destroyCharts();
+    results.classList.remove('hidden');
+
+    var rating = info.rating || null;
+    var maxRating = info.maxRating || null;
+    var tColor = tierColor(rating);
+    document.getElementById('profileCard').style.setProperty('--tier-color', tColor);
+
+    renderProfile(info, ratingHistory, submissions, tColor);
+    renderRatingChart(ratingHistory, tColor);
+    var solvedData = computeSolved(submissions);
+    renderDifficultyChart(solvedData.byRating);
+    renderTagsChart(solvedData.byTag);
+    var verdictData = computeVerdicts(submissions);
+    renderVerdictChart(verdictData);
+    renderLangChart(computeLanguages(submissions));
+    renderHeatmap(submissions);
+    renderContestTable(ratingHistory);
+
+    document.getElementById('ratingNote').textContent = ratingHistory.length
+      ? ratingHistory.length + ' rated contest' + (ratingHistory.length===1?'':'s')
+      : 'No rated contests yet';
+    document.getElementById('solvedNote').textContent = solvedData.totalSolved + ' unique problems solved';
+    document.getElementById('subNote').textContent = submissions.length + ' total submissions';
+    document.getElementById('activityNote').textContent = 'Last 12 months';
+    document.getElementById('contestNote').textContent = 'Most recent first';
+
+    if(opts.scroll){
+      results.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }
+
+  function renderProfile(info, ratingHistory, submissions, tColor){
+    var card = document.getElementById('profileCard');
+    var solved = computeSolved(submissions);
+    var streaks = computeStreaks(submissions);
+    var attempted = computeAttempted(submissions);
+    var acc = attempted.attempted ? Math.round((attempted.solved/attempted.attempted)*100) : 0;
+
+    var rating = (info.rating !== undefined) ? info.rating : null;
+    var rank = info.rank ? capitalize(info.rank) : 'Unrated';
+    var locationParts = [info.city, info.country].filter(Boolean).join(', ');
+    var avatar = info.titlePhoto || info.avatar || '';
+
+    var html = '';
+    html += '<div class="profile-left">';
+    if(avatar && avatar.indexOf('//') === 0) avatar = 'https:' + avatar;
+    html += avatar ? '<img class="avatar" src="'+escapeHtml(avatar)+'" alt="" onerror="this.style.display=\'none\'">' : '';
+    html += '<div class="profile-id">';
+    html += '<p class="handle">'+escapeHtml(info.handle)+'</p>';
+    html += '<div class="rank-badge"><span class="dot"></span>'+escapeHtml(rank)+'</div>';
+    html += '<div class="meta-line">';
+    if(locationParts) html += '<b>Location</b> '+escapeHtml(locationParts)+'<br>';
+    if(info.organization) html += '<b>Org</b> '+escapeHtml(info.organization)+'<br>';
+    html += '<b>Member since</b> '+fmtDate(info.registrationTimeSeconds)+'<br>';
+    html += '<b>Contribution</b> '+(info.contribution>0?'+':'')+info.contribution;
+    html += '</div></div></div>';
+
+    html += '<div class="stat-row">';
+    html += statCell(rating !== null ? rating : '—', 'Current Rating', 'gold');
+    html += statCell(info.maxRating || '—', 'Max Rating', '');
+    html += statCell(solved.totalSolved, 'Problems Solved', 'teal');
+    html += statCell(ratingHistory.length, 'Contests', '');
+    html += statCell(acc + '%', 'Solve Rate', acc>=50?'teal':'coral');
+    html += statCell(streaks.current, 'Day Streak', streaks.current>0?'gold':'');
+    html += statCell(streaks.max, 'Best Streak', '');
+    html += '</div>';
+
+    card.innerHTML = html;
+  }
+
+  function statCell(value, label, colorClass){
+    return '<div class="stat-cell"><div class="stat-num '+(colorClass||'')+'">'+value+'</div><div class="stat-label">'+label+'</div></div>';
+  }
+  function capitalize(s){ return s.replace(/\b\w/g, function(c){return c.toUpperCase();}); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ---------- data computation ----------
+  function problemKey(p){
+    return (p.contestId || p.problemsetName || 'X') + '_' + p.index + '_' + p.name;
+  }
+
+  function computeSolved(submissions){
+    var solvedSet = {};
+    var byRating = {};
+    var byTag = {};
+    submissions.forEach(function(s){
+      if(s.verdict !== 'OK') return;
+      var p = s.problem;
+      if(!p) return;
+      var key = problemKey(p);
+      if(solvedSet[key]) return;
+      solvedSet[key] = true;
+      var bucket = p.rating ? p.rating : 'N/A';
+      byRating[bucket] = (byRating[bucket]||0) + 1;
+      (p.tags||[]).forEach(function(tag){
+        byTag[tag] = (byTag[tag]||0) + 1;
+      });
+    });
+    return {
+      totalSolved: Object.keys(solvedSet).length,
+      byRating: byRating,
+      byTag: byTag
+    };
+  }
+
+  function computeAttempted(submissions){
+    var attempted = {};
+    var solved = {};
+    submissions.forEach(function(s){
+      var p = s.problem;
+      if(!p) return;
+      var key = problemKey(p);
+      attempted[key] = true;
+      if(s.verdict === 'OK') solved[key] = true;
+    });
+    return {attempted: Object.keys(attempted).length, solved: Object.keys(solved).length};
+  }
+
+  function computeVerdicts(submissions){
+    var counts = {};
+    submissions.forEach(function(s){
+      var v = s.verdict || 'TESTING';
+      counts[v] = (counts[v]||0) + 1;
+    });
+    return counts;
+  }
+
+  function computeLanguages(submissions){
+    var counts = {};
+    submissions.forEach(function(s){
+      var l = s.programmingLanguage || 'Unknown';
+      counts[l] = (counts[l]||0) + 1;
+    });
+    return counts;
+  }
+
+  function computeStreaks(submissions){
+    var days = {};
+    submissions.forEach(function(s){
+      var d = new Date(s.creationTimeSeconds*1000);
+      var key = d.getUTCFullYear()+'-'+d.getUTCMonth()+'-'+d.getUTCDate();
+      days[key] = true;
+    });
+    var today = new Date();
+    function keyFor(date){ return date.getUTCFullYear()+'-'+date.getUTCMonth()+'-'+date.getUTCDate(); }
+
+    // current streak: walk back from today (or yesterday) while days exist
+    var current = 0;
+    var cursor = new Date(today);
+    if(!days[keyFor(cursor)]){
+      cursor.setUTCDate(cursor.getUTCDate()-1);
+    }
+    while(days[keyFor(cursor)]){
+      current++;
+      cursor.setUTCDate(cursor.getUTCDate()-1);
+    }
+
+    // max streak: sort all unique day timestamps and scan
+    var allDates = Object.keys(days).map(function(k){
+      var parts = k.split('-').map(Number);
+      return Date.UTC(parts[0], parts[1], parts[2]) / 86400000;
+    }).sort(function(a,b){return a-b;});
+    var max = 0, run = 0, prev = null;
+    allDates.forEach(function(dayNum){
+      if(prev !== null && dayNum === prev+1){ run++; } else { run = 1; }
+      if(run > max) max = run;
+      prev = dayNum;
+    });
+    return {current: current, max: max};
+  }
+
+  // ---------- chart: rating ----------
+  function tierBandsPlugin(){
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var alpha = isLight ? 0.16 : 0.09;
+    return {
+      id: 'tierBands',
+      beforeDatasetsDraw: function(chart){
+        var ctx = chart.ctx, area = chart.chartArea, y = chart.scales.y;
+        if(!y) return;
+        ctx.save();
+        TIERS.forEach(function(tier, i){
+          var lo = i===0 ? 0 : TIERS[i-1].max;
+          var hi = tier.max === Infinity ? y.max : tier.max;
+          var yTop = y.getPixelForValue(hi);
+          var yBottom = y.getPixelForValue(lo);
+          var top = Math.max(area.top, Math.min(yTop,yBottom));
+          var bottom = Math.min(area.bottom, Math.max(yTop,yBottom));
+          if(bottom <= top) return;
+          ctx.fillStyle = tier.color;
+          ctx.globalAlpha = alpha;
+          ctx.fillRect(area.left, top, area.right-area.left, bottom-top);
+        });
+        ctx.restore();
+      }
+    };
+  }
+
+  function renderRatingChart(history, tColor){
+    var wrap = document.getElementById('ratingWrap');
+    if(!history.length){
+      wrap.innerHTML = '<div class="empty-note">No rated contests yet — this handle hasn\'t entered a rated round.</div>';
+      return;
+    }
+    var ratings = history.map(function(c){return c.newRating;});
+    var minR = Math.min.apply(null, ratings);
+    var maxR = Math.max.apply(null, ratings);
+    var yMin = Math.max(0, Math.floor((minR-150)/100)*100);
+    var yMax = Math.ceil((maxR+150)/100)*100;
+
+    var gridColor = cv('--line-soft');
+    var tickColor = cv('--ink-dim');
+    var tooltipBg = cv('--panel-2');
+    var tooltipBorder = cv('--line');
+    var tooltipTitle = cv('--ink');
+    var tooltipBody = cv('--ink-dim');
+    var panelColor = cv('--panel');
+
+    var ctx = document.getElementById('ratingChart').getContext('2d');
+    charts.rating = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: history.map(function(c){return fmtDateShort(c.ratingUpdateTimeSeconds);}),
+        datasets:[{
+          data: ratings,
+          borderColor: tColor,
+          backgroundColor: tColor + '22',
+          pointBackgroundColor: history.map(function(c){return tierColor(c.newRating);}),
+          pointBorderColor: panelColor,
+          pointBorderWidth:1.5,
+          pointRadius:4,
+          pointHoverRadius:6,
+          borderWidth:2.2,
+          fill:true,
+          tension:0.15
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{ min:yMin, max:yMax, grid:{color:gridColor}, ticks:{color:tickColor, font:{family:'DM Mono', size:11}} },
+          x:{ grid:{display:false}, ticks:{color:tickColor, font:{family:'DM Mono', size:10.5}, maxRotation:0, autoSkip:true} }
+        },
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:tooltipBg, borderColor:tooltipBorder, borderWidth:1,
+            titleColor:tooltipTitle, bodyColor:tooltipBody,
+            titleFont:{family:'Space Grotesk', size:12.5}, bodyFont:{family:'DM Mono', size:11.5},
+            callbacks:{
+              title: function(items){
+                var c = history[items[0].dataIndex];
+                return c.contestName;
+              },
+              label: function(item){
+                var c = history[item.dataIndex];
+                var delta = c.newRating - c.oldRating;
+                return [
+                  'Rank #' + c.rank,
+                  'Rating ' + c.oldRating + ' \u2192 ' + c.newRating + ' (' + (delta>=0?'+':'') + delta + ')'
+                ];
+              }
+            }
+          }
+        },
+        interaction:{intersect:false, mode:'index'}
+      },
+      plugins:[tierBandsPlugin()]
+    });
+  }
+
+  // ---------- chart: difficulty ----------
+  function renderDifficultyChart(byRating){
+    var keys = Object.keys(byRating).filter(function(k){return k!=='N/A';}).map(Number).sort(function(a,b){return a-b;});
+    var labels = keys.map(String);
+    var data = keys.map(function(k){return byRating[k];});
+    if(byRating['N/A']){ labels.push('Unrated'); data.push(byRating['N/A']); }
+
+    var canvasWrap = document.getElementById('difficultyChart').parentElement;
+    if(!labels.length){ canvasWrap.innerHTML = '<div class="empty-note">No solved problems with a known rating yet.</div>'; return; }
+
+    var gridColor = cv('--line-soft');
+    var tickColor = cv('--ink-dim');
+    var tooltipBg = cv('--panel-2');
+    var tooltipBorder = cv('--line');
+    var tooltipTitle = cv('--ink');
+    var tooltipBody = cv('--ink-dim');
+
+    var ctx = document.getElementById('difficultyChart').getContext('2d');
+    charts.difficulty = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: labels,
+        datasets:[{
+          data: data,
+          backgroundColor: keys.map(function(k){return tierColor(k);}).concat(byRating['N/A']?['#5b6178']:[]),
+          borderRadius:4,
+          maxBarThickness:26
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{ beginAtZero:true, grid:{color:gridColor}, ticks:{color:tickColor, precision:0} },
+          x:{ grid:{display:false}, ticks:{color:tickColor, font:{family:'DM Mono', size:10}, maxRotation:60, minRotation:0} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:tooltipBg, borderColor:tooltipBorder, borderWidth:1, titleColor:tooltipTitle, bodyColor:tooltipBody} }
+      }
+    });
+  }
+
+  // ---------- chart: tags ----------
+  function renderTagsChart(byTag){
+    var entries = Object.keys(byTag).map(function(t){return [t, byTag[t]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,9);
+    var canvasWrap = document.getElementById('tagsChart').parentElement;
+    if(!entries.length){ canvasWrap.innerHTML = '<div class="empty-note">No tagged solves yet.</div>'; return; }
+
+    var palette = ['#4fbdba','#5fd0cd','#3aaa9f','#d4a954','#e0bd7a','#e2725b','#ee9684','#7fa8e8','#9d7fe8'];
+    var gridColor = cv('--line-soft');
+    var tickColor = cv('--ink-dim');
+    var tooltipBg = cv('--panel-2');
+    var tooltipBorder = cv('--line');
+    var tooltipTitle = cv('--ink');
+    var tooltipBody = cv('--ink-dim');
+
+    var ctx = document.getElementById('tagsChart').getContext('2d');
+    charts.tags = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: entries.map(function(e){return e[0];}),
+        datasets:[{
+          data: entries.map(function(e){return e[1];}),
+          backgroundColor: palette,
+          borderRadius:4,
+          maxBarThickness:18
+        }]
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ beginAtZero:true, grid:{color:gridColor}, ticks:{color:tickColor, precision:0} },
+          y:{ grid:{display:false}, ticks:{color:tickColor, font:{size:11.5}} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:tooltipBg, borderColor:tooltipBorder, borderWidth:1, titleColor:tooltipTitle, bodyColor:tooltipBody} }
+      }
+    });
+  }
+
+  // ---------- chart: verdicts ----------
+  function renderVerdictChart(counts){
+    var entries = Object.keys(counts).map(function(v){return [v, counts[v]];}).sort(function(a,b){return b[1]-a[1];});
+    var top = entries.slice(0,6);
+    var rest = entries.slice(6).reduce(function(sum,e){return sum+e[1];},0);
+    if(rest>0) top.push(['OTHER', rest]);
+
+    var canvasWrap = document.getElementById('verdictChart').parentElement;
+    if(!top.length){ canvasWrap.innerHTML = '<div class="empty-note">No submissions yet.</div>'; return; }
+
+    var labels = top.map(function(e){ return (VERDICT_META[e[0]]||{label:capitalize(e[0].toLowerCase().replace(/_/g,' '))}).label; });
+    var colors = top.map(function(e){ return (VERDICT_META[e[0]]||{color:'#5b6178'}).color; });
+    var data = top.map(function(e){return e[1];});
+    var tickColor = cv('--ink-dim');
+    var tooltipBg = cv('--panel-2');
+    var tooltipBorder = cv('--line');
+    var tooltipTitle = cv('--ink');
+    var tooltipBody = cv('--ink-dim');
+    var panelColor = cv('--panel');
+
+    var ctx = document.getElementById('verdictChart').getContext('2d');
+    charts.verdict = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels: labels, datasets:[{ data:data, backgroundColor:colors, borderColor:panelColor, borderWidth:2 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        cutout:'62%',
+        plugins:{
+          legend:{ position:'right', labels:{ color:tickColor, font:{size:11.5, family:'DM Sans'}, boxWidth:10, boxHeight:10, padding:10 } },
+          tooltip:{backgroundColor:tooltipBg, borderColor:tooltipBorder, borderWidth:1, titleColor:tooltipTitle, bodyColor:tooltipBody}
+        }
+      }
+    });
+  }
+
+  // ---------- chart: languages ----------
+  function renderLangChart(counts){
+    var entries = Object.keys(counts).map(function(l){return [l, counts[l]];}).sort(function(a,b){return b[1]-a[1];});
+    var top = entries.slice(0,6);
+    var rest = entries.slice(6).reduce(function(sum,e){return sum+e[1];},0);
+    if(rest>0) top.push(['Other', rest]);
+
+    var canvasWrap = document.getElementById('langChart').parentElement;
+    if(!top.length){ canvasWrap.innerHTML = '<div class="empty-note">No submissions yet.</div>'; return; }
+
+    var palette = ['#d4a954','#e0bd7a','#4fbdba','#7fd0cd','#e2725b','#ee9684','#9d7fe8'];
+    var tickColor = cv('--ink-dim');
+    var tooltipBg = cv('--panel-2');
+    var tooltipBorder = cv('--line');
+    var tooltipTitle = cv('--ink');
+    var tooltipBody = cv('--ink-dim');
+    var panelColor = cv('--panel');
+
+    var ctx = document.getElementById('langChart').getContext('2d');
+    charts.lang = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels: top.map(function(e){return e[0];}), datasets:[{ data: top.map(function(e){return e[1];}), backgroundColor:palette, borderColor:panelColor, borderWidth:2 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        cutout:'62%',
+        plugins:{
+          legend:{ position:'right', labels:{ color:tickColor, font:{size:11, family:'DM Sans'}, boxWidth:10, boxHeight:10, padding:10 } },
+          tooltip:{backgroundColor:tooltipBg, borderColor:tooltipBorder, borderWidth:1, titleColor:tooltipTitle, bodyColor:tooltipBody}
+        }
+      }
+    });
+  }
+
+  // ---------- heatmap ----------
+  function renderHeatmap(submissions){
+    var counts = {};
+    submissions.forEach(function(s){
+      var d = new Date(s.creationTimeSeconds*1000);
+      var key = d.getUTCFullYear()+'-'+(d.getUTCMonth()+1)+'-'+d.getUTCDate();
+      counts[key] = (counts[key]||0) + 1;
+    });
+
+    var today = new Date();
+    today.setUTCHours(0,0,0,0);
+    var start = new Date(today);
+    start.setUTCDate(start.getUTCDate() - 370);
+    // align to the most recent Sunday on/before start
+    start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+
+    var weeks = [];
+    var cursor = new Date(start);
+    while(cursor <= today){
+      var week = [];
+      for(var i=0;i<7;i++){
+        week.push(new Date(cursor));
+        cursor.setUTCDate(cursor.getUTCDate()+1);
+      }
+      weeks.push(week);
+    }
+
+    var maxCount = 1;
+    weeks.forEach(function(week){
+      week.forEach(function(d){
+        var key = d.getUTCFullYear()+'-'+(d.getUTCMonth()+1)+'-'+d.getUTCDate();
+        if(counts[key] > maxCount) maxCount = counts[key];
+      });
+    });
+
+    function heatColor(c){
+      if(!c) return 'var(--line-soft)';
+      var ratio = Math.min(1, c / Math.max(4, maxCount*0.6));
+      var alpha = 0.22 + ratio*0.78;
+      return 'rgba(79,189,186,'+alpha.toFixed(2)+')';
+    }
+
+    var gridEl = document.getElementById('hmGrid');
+    var monthsEl = document.getElementById('hmMonths');
+    gridEl.style.gridTemplateColumns = 'repeat(' + weeks.length + ', 12px)';
+    monthsEl.style.gridTemplateColumns = 'repeat(' + weeks.length + ', 12px)';
+    gridEl.innerHTML = '';
+    monthsEl.innerHTML = '';
+
+    var lastMonth = -1;
+    weeks.forEach(function(week, wi){
+      var firstOfMonthDay = week.find(function(d){ return d <= today && d.getUTCDate() <= 7; });
+      if(firstOfMonthDay && firstOfMonthDay.getUTCMonth() !== lastMonth){
+        lastMonth = firstOfMonthDay.getUTCMonth();
+        var label = document.createElement('span');
+        label.style.gridColumnStart = (wi+1);
+        label.textContent = firstOfMonthDay.toLocaleDateString('en-US', {month:'short'});
+        monthsEl.appendChild(label);
+      }
+      week.forEach(function(d){
+        var cell = document.createElement('div');
+        if(d > today){
+          cell.style.background = 'transparent';
+        } else {
+          var key = d.getUTCFullYear()+'-'+(d.getUTCMonth()+1)+'-'+d.getUTCDate();
+          var c = counts[key] || 0;
+          cell.className = 'hm-cell';
+          cell.style.background = heatColor(c);
+          cell.title = d.toISOString().slice(0,10) + ' — ' + c + ' submission' + (c===1?'':'s');
+        }
+        gridEl.appendChild(cell);
+      });
+    });
+  }
+
+  // ---------- contest table ----------
+  function renderContestTable(history){
+    var body = document.getElementById('contestTableBody');
+    if(!history.length){
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:28px; color:var(--ink-faint);">No rated contests to show.</td></tr>';
+      return;
+    }
+    var recent = history.slice(-15).reverse();
+    body.innerHTML = recent.map(function(c){
+      var delta = c.newRating - c.oldRating;
+      var deltaClass = delta >= 0 ? 'delta-pos' : 'delta-neg';
+      var deltaStr = (delta>=0?'+':'') + delta;
+      return '<tr>' +
+        '<td class="contest-name">'+escapeHtml(c.contestName)+'</td>' +
+        '<td class="mono-num">'+fmtDate(c.ratingUpdateTimeSeconds)+'</td>' +
+        '<td class="mono-num">#'+c.rank+'</td>' +
+        '<td class="mono-num" style="color:'+tierColor(c.newRating)+'">'+c.newRating+'</td>' +
+        '<td class="mono-num '+deltaClass+'">'+deltaStr+'</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+})();
+</script>
+</body>
+</html>

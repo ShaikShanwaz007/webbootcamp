@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeetStats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="light"] {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --surface: #ffffff;
+    --input-border: #dadce0;
+    --input-shadow: rgba(32, 33, 36, 0.12);
+    --track: #f0f1f3;
+    --easy: #0fa39e;
+    --medium: #c8930f;
+    --hard: #e05252;
+    --accent: #c8930f;
+    --card-shadow: 0 1px 3px rgba(32, 33, 36, 0.08), 0 8px 28px rgba(32, 33, 36, 0.06);
+  }
+  [data-theme="dark"] {
+    --bg: #0a0b0d;
+    --text: #e9e7e2;
+    --muted: #8b8f98;
+    --line: rgba(255, 255, 255, 0.09);
+    --surface: #121418;
+    --input-border: rgba(255, 255, 255, 0.14);
+    --input-shadow: rgba(0, 0, 0, 0.5);
+    --track: rgba(255, 255, 255, 0.08);
+    --easy: #3ddad7;
+    --medium: #e3b341;
+    --hard: #ff6b6b;
+    --accent: #e3b341;
+    --card-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "DM Sans", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  /* theme toggle, top right */
+  .theme-toggle {
+    position: fixed;
+    top: 18px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.25s, border-color 0.25s, transform 0.15s;
+    z-index: 10;
+  }
+  .theme-toggle:hover { transform: scale(1.06); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main {
+    width: 100%;
+    max-width: 640px;
+    padding: 0 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Google-style: sits a bit above vertical center when idle */
+    margin-top: clamp(96px, 24vh, 210px);
+    transition: margin-top 0.45s cubic-bezier(0.3, 0.8, 0.3, 1);
+  }
+  body.has-result main { margin-top: 72px; }
+
+  .wordmark {
+    font-family: "Playfair Display", serif;
+    font-weight: 600;
+    font-size: clamp(40px, 8vw, 56px);
+    letter-spacing: -0.01em;
+    margin-bottom: 30px;
+    user-select: none;
+  }
+  .wordmark .l { color: var(--easy); }
+  .wordmark .e { color: var(--medium); }
+  .wordmark .t { color: var(--hard); }
+
+  /* search */
+  .search {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--input-border);
+    border-radius: 999px;
+    padding: 0 8px 0 22px;
+    height: 52px;
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.25s;
+  }
+  .search:focus-within {
+    box-shadow: 0 2px 10px var(--input-shadow);
+    border-color: transparent;
+  }
+  [data-theme="dark"] .search:focus-within { border-color: var(--accent); box-shadow: none; }
+
+  .search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-family: "DM Mono", monospace;
+    font-size: 16px;
+  }
+  .search input::placeholder { color: var(--muted); font-family: "DM Sans", sans-serif; }
+
+  .search button {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .search button:hover { color: var(--accent); background: var(--track); }
+  .search button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .search button:disabled { opacity: 0.45; cursor: wait; }
+
+  .try {
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--muted);
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .try button {
+    background: none;
+    border: none;
+    padding: 2px 1px;
+    color: var(--accent);
+    font-family: "DM Mono", monospace;
+    font-size: 13.5px;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+    transition: border-color 0.15s;
+  }
+  .try button:hover { border-bottom-color: var(--accent); }
+  .try button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* states */
+  .loader {
+    margin-top: 52px;
+    width: 34px; height: 34px;
+    border: 3px solid var(--track);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error {
+    margin-top: 44px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14.5px;
+    line-height: 1.6;
+    max-width: 420px;
+  }
+  .error b { color: var(--hard); font-weight: 700; display: block; margin-bottom: 4px; }
+
+  /* card */
+  .card {
+    width: 100%;
+    margin-top: 44px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 30px 34px;
+    box-shadow: var(--card-shadow);
+    animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    transition: background 0.25s, border-color 0.25s;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 26px;
+  }
+  .card-head a {
+    font-family: "Playfair Display", serif;
+    font-size: 23px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .card-head a:hover { color: var(--accent); }
+  .card-head .rank {
+    font-family: "DM Mono", monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .card-head .rank b { color: var(--accent); font-weight: 500; }
+
+  .card-body {
+    display: grid;
+    grid-template-columns: 168px 1fr;
+    gap: 34px;
+    align-items: center;
+  }
+
+  .ring-wrap { position: relative; width: 168px; height: 168px; margin: 0 auto; }
+  .ring-wrap svg { transform: rotate(-90deg); display: block; }
+  .ring-track { fill: none; stroke: var(--track); stroke-width: 9; }
+  .ring-fill {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 9;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.1s cubic-bezier(0.3, 0.8, 0.3, 1), stroke 0.25s;
+  }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .ring-center .big {
+    font-family: "DM Mono", monospace;
+    font-size: 36px;
+    line-height: 1;
+  }
+  .ring-center .small {
+    color: var(--muted);
+    font-size: 11.5px;
+    margin-top: 6px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 18px; }
+  .bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 7px;
+  }
+  .bar-top .label {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .bar-top .nums {
+    font-family: "DM Mono", monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .bar-top .nums b { color: var(--text); font-weight: 500; }
+  .bar-track { height: 7px; border-radius: 99px; background: var(--track); overflow: hidden; }
+  .bar-fill { height: 100%; width: 0; border-radius: 99px; transition: width 1.1s cubic-bezier(0.3, 0.8, 0.3, 1); }
+  .easy   .label { color: var(--easy); }   .easy   .bar-fill { background: var(--easy); }
+  .medium .label { color: var(--medium); } .medium .bar-fill { background: var(--medium); }
+  .hard   .label { color: var(--hard); }   .hard   .bar-fill { background: var(--hard); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 540px) {
+    .card { padding: 24px 20px; }
+    .card-body { grid-template-columns: 1fr; gap: 26px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <button class="theme-toggle" id="theme-toggle" aria-label="Switch theme" title="Switch theme">🌙</button>
+
+  <main>
+    <h1 class="wordmark"><span class="l">Leet</span><span class="e">St</span><span class="t">ats</span></h1>
+
+    <div class="search">
+      <input id="username" type="text" placeholder="Search a LeetCode username" autocomplete="off" spellcheck="false" aria-label="LeetCode username">
+      <button id="go" aria-label="Fetch stats" title="Fetch stats">→</button>
+    </div>
+
+    <div class="try">
+      <span>Try:</span>
+      <button data-u="jacoblincool">jacoblincool</button>
+      <button data-u="lee215">lee215</button>
+      <button data-u="votrubac">votrubac</button>
+    </div>
+
+    <div id="loading" class="loader hidden" role="status" aria-label="Loading"></div>
+
+    <div id="error" class="error hidden" role="alert">
+      <b>Couldn't fetch that profile</b>
+      <span id="error-msg"></span>
+    </div>
+
+    <section id="card" class="card hidden" aria-live="polite">
+      <div class="card-head">
+        <a id="profile-link" href="#" target="_blank" rel="noopener"></a>
+        <span class="rank">Rank <b id="ranking">—</b></span>
+      </div>
+      <div class="card-body">
+        <div class="ring-wrap">
+          <svg width="168" height="168" viewBox="0 0 168 168" aria-hidden="true">
+            <circle class="ring-track" cx="84" cy="84" r="74"></circle>
+            <circle class="ring-fill" id="ring" cx="84" cy="84" r="74"></circle>
+          </svg>
+          <div class="ring-center">
+            <div class="big" id="total-solved">0</div>
+            <div class="small" id="total-label">solved</div>
+          </div>
+        </div>
+        <div class="bars">
+          <div class="bar-row easy">
+            <div class="bar-top"><span class="label">Easy</span>
+              <span class="nums"><b id="easy-solved">0</b> / <span id="easy-total">0</span></span></div>
+            <div class="bar-track"><div class="bar-fill" id="easy-bar"></div></div>
+          </div>
+          <div class="bar-row medium">
+            <div class="bar-top"><span class="label">Medium</span>
+              <span class="nums"><b id="medium-solved">0</b> / <span id="medium-total">0</span></span></div>
+            <div class="bar-track"><div class="bar-fill" id="medium-bar"></div></div>
+          </div>
+          <div class="bar-row hard">
+            <div class="bar-top"><span class="label">Hard</span>
+              <span class="nums"><b id="hard-solved">0</b> / <span id="hard-total">0</span></span></div>
+            <div class="bar-track"><div class="bar-fill" id="hard-bar"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- theme ---------- */
+  var root = document.documentElement;
+  var toggle = document.getElementById("theme-toggle");
+  var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  setTheme(prefersDark ? "dark" : "light");
+
+  function setTheme(t) {
+    root.setAttribute("data-theme", t);
+    toggle.textContent = t === "dark" ? "☀️" : "🌙";
+  }
+  toggle.addEventListener("click", function () {
+    setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+
+  /* ---------- elements ---------- */
+  var input = document.getElementById("username");
+  var goBtn = document.getElementById("go");
+  var loadingEl = document.getElementById("loading");
+  var errorEl = document.getElementById("error");
+  var errorMsg = document.getElementById("error-msg");
+  var cardEl = document.getElementById("card");
+
+  var RING_R = 74;
+  var RING_C = 2 * Math.PI * RING_R;
+  var ring = document.getElementById("ring");
+  ring.setAttribute("stroke-dasharray", RING_C);
+  ring.setAttribute("stroke-dashoffset", RING_C);
+
+  /* ---------- data sources (tried in order) ---------- */
+  var SOURCES = [
+    {
+      url: function (u) { return "https://leetcode-api-faisalshohag.vercel.app/" + encodeURIComponent(u); },
+      parse: function (d) {
+        if (!d || d.errors || d.totalSolved === undefined) return null;
+        return pick(d);
+      }
+    },
+    {
+      url: function (u) { return "https://alfa-leetcode-api.onrender.com/userProfile/" + encodeURIComponent(u); },
+      parse: function (d) {
+        if (!d || d.errors || d.totalSolved === undefined) return null;
+        return pick(d);
+      }
+    },
+    {
+      url: function (u) { return "https://leetcode-stats-api.herokuapp.com/" + encodeURIComponent(u); },
+      parse: function (d) {
+        if (!d || d.status !== "success") return null;
+        return pick(d);
+      }
+    }
+  ];
+
+  function pick(d) {
+    return {
+      totalSolved: d.totalSolved, totalQuestions: d.totalQuestions,
+      easySolved: d.easySolved, totalEasy: d.totalEasy,
+      mediumSolved: d.mediumSolved, totalMedium: d.totalMedium,
+      hardSolved: d.hardSolved, totalHard: d.totalHard,
+      ranking: d.ranking
+    };
+  }
+
+  function fetchWithTimeout(url, ms) {
+    var ctrl = new AbortController();
+    var t = setTimeout(function () { ctrl.abort(); }, ms);
+    return fetch(url, { signal: ctrl.signal })
+      .then(function (r) { return r.json(); })
+      .finally(function () { clearTimeout(t); });
+  }
+
+  function fetchStats(username) {
+    var i = 0;
+    function tryNext() {
+      if (i >= SOURCES.length) return Promise.reject(new Error("all sources failed"));
+      var src = SOURCES[i++];
+      return fetchWithTimeout(src.url(username), 12000)
+        .then(function (json) {
+          var parsed = src.parse(json);
+          return parsed || tryNext();
+        })
+        .catch(function () { return tryNext(); });
+    }
+    return tryNext();
+  }
+
+  /* ---------- rendering ---------- */
+  function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return "—";
+    return Number(n).toLocaleString("en-US");
+  }
+
+  function countUp(el, target, ms) {
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !target) { el.textContent = fmt(target || 0); return; }
+    var start = performance.now();
+    (function step(now) {
+      var p = Math.min(((now || performance.now()) - start) / ms, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(step);
+    })();
+  }
+
+  function setBar(id, solved, total) {
+    var pct = total > 0 ? (solved / total) * 100 : 0;
+    document.getElementById(id).style.width = Math.max(pct, solved > 0 ? 2 : 0) + "%";
+  }
+
+  function render(username, s) {
+    var link = document.getElementById("profile-link");
+    link.textContent = username;
+    link.href = "https://leetcode.com/u/" + encodeURIComponent(username) + "/";
+
+    document.getElementById("ranking").textContent = "#" + fmt(s.ranking);
+    document.getElementById("total-label").textContent = "of " + fmt(s.totalQuestions);
+    document.getElementById("easy-solved").textContent = fmt(s.easySolved);
+    document.getElementById("easy-total").textContent = fmt(s.totalEasy);
+    document.getElementById("medium-solved").textContent = fmt(s.mediumSolved);
+    document.getElementById("medium-total").textContent = fmt(s.totalMedium);
+    document.getElementById("hard-solved").textContent = fmt(s.hardSolved);
+    document.getElementById("hard-total").textContent = fmt(s.totalHard);
+
+    document.body.classList.add("has-result");
+    cardEl.classList.remove("hidden");
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        countUp(document.getElementById("total-solved"), s.totalSolved, 1100);
+        var pct = s.totalQuestions > 0 ? s.totalSolved / s.totalQuestions : 0;
+        ring.setAttribute("stroke-dashoffset", RING_C * (1 - pct));
+        setBar("easy-bar", s.easySolved, s.totalEasy);
+        setBar("medium-bar", s.mediumSolved, s.totalMedium);
+        setBar("hard-bar", s.hardSolved, s.totalHard);
+      });
+    });
+  }
+
+  function resetCard() {
+    ring.setAttribute("stroke-dashoffset", RING_C);
+    ["easy-bar", "medium-bar", "hard-bar"].forEach(function (id) {
+      document.getElementById(id).style.width = "0";
+    });
+    document.getElementById("total-solved").textContent = "0";
+  }
+
+  /* ---------- flow ---------- */
+  var busy = false;
+
+  function lookup(username) {
+    username = (username || "").trim();
+    if (!username || busy) return;
+    busy = true;
+
+    input.value = username;
+    goBtn.disabled = true;
+    errorEl.classList.add("hidden");
+    cardEl.classList.add("hidden");
+    resetCard();
+    loadingEl.classList.remove("hidden");
+
+    fetchStats(username)
+      .then(function (stats) {
+        loadingEl.classList.add("hidden");
+        render(username, stats);
+      })
+      .catch(function () {
+        loadingEl.classList.add("hidden");
+        errorMsg.textContent = 'No stats found for "' + username +
+          '". Check the spelling, or the public stats APIs may be briefly busy — try again in a moment.';
+        errorEl.classList.remove("hidden");
+      })
+      .finally(function () {
+        goBtn.disabled = false;
+        busy = false;
+      });
+  }
+
+  goBtn.addEventListener("click", function () { lookup(input.value); });
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter") lookup(input.value); });
+  document.querySelectorAll(".try button").forEach(function (b) {
+    b.addEventListener("click", function () { lookup(b.dataset.u); });
+  });
+})();
+</script>
+</body>
+</html>

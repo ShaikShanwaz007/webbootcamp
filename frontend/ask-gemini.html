@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AskGemini — streaming API demo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12vh 20px 60px;
+         text-align: center; background: #fff; color: #222; transition: 0.3s; }
+  body.dark { background: #0a0b0d; color: #eee; }
+
+  #gear, #theme { position: fixed; top: 14px; font-size: 22px;
+                  background: none; border: none; cursor: pointer; }
+  #gear  { left: 16px; }
+  #theme { right: 16px; }
+
+  h1 { font-size: 44px; margin: 0 0 8px; }
+  h1 span { color: #e3b341; }
+  #tagline { color: gray; margin: 0 0 28px; }
+
+  #ask { display: flex; gap: 8px; max-width: 620px; margin: 0 auto;
+         border: 1px solid #8884; border-radius: 16px; padding: 10px 10px 10px 18px;
+         background: inherit; }
+  #ask:focus-within { border-color: #e3b341; }
+  #prompt { flex: 1; border: none; outline: none; resize: none; font: inherit;
+            font-size: 16px; background: inherit; color: inherit; }
+  #send { border: none; border-radius: 10px; background: #e3b341; color: #1a1503;
+          font-size: 16px; font-weight: bold; padding: 0 16px; cursor: pointer;
+          align-self: flex-end; height: 38px; }
+  #send:disabled { opacity: 0.5; cursor: wait; }
+  #hint { color: gray; font-size: 13px; margin-top: 10px; }
+
+  #status { max-width: 620px; margin: 24px auto 0; color: gray; }
+  #status.error { color: #ef4444; }
+  #status a { color: #e3b341; cursor: pointer; }
+
+  /* conversation */
+  #chat { max-width: 620px; margin: 10px auto 0; text-align: left; }
+  .q { margin: 26px 0 12px; padding: 10px 16px; border-radius: 14px;
+       background: #8882; display: inline-block; font-weight: bold; }
+
+  /* rendered markdown answer */
+  .a { line-height: 1.65; overflow-wrap: break-word; }
+  .a :first-child { margin-top: 0; }
+  .a :last-child  { margin-bottom: 0; }
+  .a h1, .a h2, .a h3 { line-height: 1.3; }
+  .a p  { margin: 12px 0; }
+  .a ul, .a ol { margin: 12px 0; padding-left: 24px; }
+  .a li { margin: 4px 0; }
+  .a blockquote { margin: 12px 0; padding: 4px 16px; border-left: 3px solid #e3b341; color: gray; }
+  .a pre  { background: #8882; padding: 12px; border-radius: 10px; overflow-x: auto; }
+  .a code { background: #8882; padding: 1px 5px; border-radius: 5px; font-size: 0.9em; }
+  .a pre code { background: none; padding: 0; }
+  .a table { border-collapse: collapse; margin: 12px 0; width: 100%; }
+  .a th, .a td { border: 1px solid #8884; padding: 6px 10px; text-align: left; }
+  .a a { color: #e3b341; }
+
+  .caret { display: inline-block; width: 8px; height: 17px; background: #e3b341;
+           vertical-align: text-bottom; animation: blink 0.8s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* settings dialog */
+  dialog { border: 1px solid #8884; border-radius: 16px; padding: 26px;
+           width: min(400px, 90vw); background: inherit; color: inherit; text-align: left; }
+  dialog::backdrop { background: #0008; }
+  dialog h2 { margin-top: 0; }
+  #key { width: 100%; box-sizing: border-box; padding: 10px 14px; font: inherit;
+         border: 1px solid #8884; border-radius: 10px; background: inherit; color: inherit;
+         outline-color: #e3b341; }
+  dialog p  { color: gray; font-size: 14px; }
+  dialog a  { color: #e3b341; }
+  dialog menu { display: flex; gap: 10px; padding: 0; margin: 18px 0 0; }
+  dialog menu button { flex: 1; padding: 10px; font: inherit; border-radius: 10px;
+                       border: 1px solid #8884; background: inherit; color: inherit; cursor: pointer; }
+  dialog menu #save { background: #e3b341; color: #1a1503; border: none; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<button id="gear" title="Settings">⚙️</button>
+<button id="theme" title="Switch theme">🌙</button>
+
+<h1>Ask<span>Gemini</span></h1>
+<p id="tagline">A streaming LLM client in one HTML file — no frameworks, no backend.</p>
+
+<div id="ask">
+  <textarea id="prompt" rows="2" placeholder="Ask Gemini anything…"></textarea>
+  <button id="send" title="Send">➤</button>
+</div>
+<p id="hint">Enter to send · Shift+Enter for a new line</p>
+
+<p id="status"></p>
+<div id="chat"></div>
+
+<dialog id="settings">
+  <h2>⚙️ Settings</h2>
+  <label for="key"><b>Gemini API key</b></label><br><br>
+  <input id="key" type="password" placeholder="AIza…">
+  <p>Stored only in <b>your browser's localStorage</b> — it never leaves this page
+     except to call Google's API. Get a free key at
+     <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>.</p>
+  <menu>
+    <button id="clear">Clear key</button>
+    <button id="save">Save</button>
+  </menu>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const MODEL = "gemini-2.5-flash";
+const URL = key =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${key}`;
+
+/* ---------- theme (remembered across visits) ---------- */
+function setTheme(dark) {
+  document.body.classList.toggle("dark", dark);
+  $("theme").textContent = dark ? "☀️" : "🌙";
+  localStorage.theme = dark ? "dark" : "light";
+}
+setTheme(localStorage.theme
+  ? localStorage.theme === "dark"
+  : matchMedia("(prefers-color-scheme: dark)").matches);
+$("theme").onclick = () => setTheme(!document.body.classList.contains("dark"));
+
+/* ---------- settings dialog ---------- */
+$("gear").onclick = () => { $("key").value = localStorage.geminiKey || ""; $("settings").showModal(); };
+$("save").onclick = () => {
+  localStorage.geminiKey = $("key").value.trim();
+  $("settings").close();
+  say("API key saved ✓");
+};
+$("clear").onclick = () => { localStorage.removeItem("geminiKey"); $("key").value = ""; say("API key removed"); };
+
+function say(msg, isError) {
+  $("status").innerHTML = msg;
+  $("status").className = isError ? "error" : "";
+}
+
+/* ---------- markdown → safe HTML ----------
+   marked.parse() turns Gemini's Markdown into real HTML (headings, lists,
+   tables, code fences, bold/italic, links — everything).
+   DOMPurify.sanitize() strips anything dangerous (e.g. <script>, onclick=…)
+   before it touches the page, since this text came from a network response,
+   not from us. */
+function toHtml(markdown) {
+  return DOMPurify.sanitize(marked.parse(markdown));
+}
+
+/* ---------- ask + stream ---------- */
+$("prompt").onkeydown = e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); }
+};
+$("send").onclick = ask;
+
+async function ask() {
+  const prompt = $("prompt").value.trim();
+  if (!prompt) return;
+
+  const key = localStorage.geminiKey;
+  if (!key) {
+    return say(`No API key yet. Click the ⚙️ gear (top-left) and paste one —
+      it's free at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>.`, true);
+  }
+
+  $("prompt").value = "";
+  $("send").disabled = true;
+  say("Gemini is thinking…");
+  const q = document.createElement("div"); q.className = "q"; q.textContent = prompt;
+  const a = document.createElement("div"); a.className = "a";
+  $("chat").append(q, a);
+
+  let answer = "";
+  let frameQueued = false;
+
+  // Re-parsing Markdown on every tiny network chunk is wasteful — a chunk can
+  // be a single word. Instead we mark a render as "pending" and let the
+  // browser's own paint cycle (requestAnimationFrame) collapse many chunks
+  // into one DOM update, at most once per frame (~60 times/sec, plenty for
+  // reading speed).
+  function scheduleRender() {
+    if (frameQueued) return;
+    frameQueued = true;
+    requestAnimationFrame(() => {
+      frameQueued = false;
+      a.innerHTML = toHtml(answer) + '<span class="caret"></span>';
+    });
+  }
+  function renderFinal() {
+    a.innerHTML = toHtml(answer);
+  }
+
+  try {
+    const res = await fetch(URL(key), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop();                     // keep the incomplete last line
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const chunk = JSON.parse(line.slice(6));
+        answer += chunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        scheduleRender();
+      }
+    }
+    renderFinal();
+    say("");
+  } catch (e) {
+    renderFinal();
+    say("Gemini error: " + e.message, true);
+  } finally {
+    $("send").disabled = false;
+    $("prompt").focus();
+  }
+}
+</script>
+
+</body>
+</html>
